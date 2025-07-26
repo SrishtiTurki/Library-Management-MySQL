@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Add Book</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 20px;
+      line-height: 1.6;
+    }
+    h2 {
+      color: #333;
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    form {
+      background: #f9f9f9;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: bold;
+    }
+    input {
+      width: 100%;
+      padding: 8px;
+      margin-bottom: 15px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      box-sizing: border-box;
+    }
+    button {
+      background: #4CAF50;
+      color: white;
+      padding: 10px 15px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 16px;
+      width: 100%;
+    }
+    button:hover {
+      background: #45a049;
+    }
+    .error {
+      color: red;
+      font-size: 14px;
+      margin-top: -10px;
+      margin-bottom: 10px;
+    }
+    .success {
+      color: green;
+      text-align: center;
+      margin-bottom: 15px;
+    }
+  </style>
+</head>
+<body>
+  <h2>Add New Book</h2>
+  <div id="message" class="success" style="display: none;"></div>
+  
+  <form id="bookForm">
+    <label for="BOOK_ID">Book ID:</label>
+    <input type="number" id="BOOK_ID" name="BOOK_ID" required>
+    <div id="BOOK_ID_error" class="error"></div>
+
+    <label for="BOOK_NAME">Book Name:</label>
+    <input type="text" id="BOOK_NAME" name="BOOK_NAME" required>
+    <div id="BOOK_NAME_error" class="error"></div>
+
+    <label for="TOTAL_COPIES">Total Copies:</label>
+    <input type="number" id="TOTAL_COPIES" name="TOTAL_COPIES" min="1" required>
+    <div id="TOTAL_COPIES_error" class="error"></div>
+
+    <label for="AVAILABLE_COPIES">Available Copies:</label>
+    <input type="number" id="AVAILABLE_COPIES" name="AVAILABLE_COPIES" min="0" required>
+    <div id="AVAILABLE_COPIES_error" class="error"></div>
+
+    <label for="AUTHOR">Author:</label>
+    <input type="text" id="AUTHOR" name="AUTHOR" required>
+    <div id="AUTHOR_error" class="error"></div>
+
+    <label for="GENRE">Genre:</label>
+    <input type="text" id="GENRE" name="GENRE" required>
+    <div id="GENRE_error" class="error"></div>
+
+    <button type="submit">Add Book</button>
+  </form>
+
+  <script>
+    document.getElementById('bookForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      // Clear previous messages and errors
+      document.getElementById('message').style.display = 'none';
+      document.querySelectorAll('.error').forEach(el => el.textContent = '');
+      
+      // Get form data
+      const formData = new FormData(e.target);
+      const data = Object.fromEntries(formData.entries());
+      
+      // Client-side validation
+      let isValid = true;
+      
+      if (parseInt(data.AVAILABLE_COPIES) > parseInt(data.TOTAL_COPIES)) {
+        document.getElementById('AVAILABLE_COPIES_error').textContent = 
+          'Available copies cannot exceed total copies';
+        isValid = false;
+      }
+      
+      if (!isValid) return;
+      
+      try {
+        const response = await fetch('http://localhost:3000/books', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            BOOK_ID: data.BOOK_ID,
+            BOOK_NAME: data.BOOK_NAME,
+            TOTAL_COPIES: parseInt(data.TOTAL_COPIES),
+            AVAILABLE_COPIES: parseInt(data.AVAILABLE_COPIES),
+            AUTHOR: data.AUTHOR,
+            GENRE: data.GENRE
+          })
+        });
+
+        const result = await response.json();
+        
+        if (!response.ok) {
+          // Handle server-side validation errors
+          if (result.error && result.details) {
+            for (const [field, message] of Object.entries(result.details)) {
+              const errorElement = document.getElementById(`${field}_error`);
+              if (errorElement) {
+                errorElement.textContent = message;
+              }
+            }
+          } else {
+            showMessage(result.error || 'Failed to add book', 'error');
+          }
+          return;
+        }
+        
+        // Success
+        showMessage(result.message || 'Book added successfully!', 'success');
+        document.getElementById('bookForm').reset();
+        
+      } catch (error) {
+        console.error('Error:', error);
+        showMessage('Failed to add book. Please try again.', 'error');
+      }
+    });
+    
+    function showMessage(message, type) {
+      const messageDiv = document.getElementById('message');
+      messageDiv.textContent = message;
+      messageDiv.className = type === 'success' ? 'success' : 'error';
+      messageDiv.style.display = 'block';
+    }
+    
+    // Auto-set available copies when total copies changes
+    document.getElementById('TOTAL_COPIES').addEventListener('change', function() {
+      const availableInput = document.getElementById('AVAILABLE_COPIES');
+      if (!availableInput.value || availableInput.value > this.value) {
+        availableInput.value = this.value;
+      }
+      availableInput.max = this.value;
+    });
+  </script>
+</body>
+</html>

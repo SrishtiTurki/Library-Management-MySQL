@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Add Member</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 20px;
+      line-height: 1.6;
+    }
+    h2 {
+      color: #333;
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    form {
+      background: #f9f9f9;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: bold;
+    }
+    input, select {
+      width: 100%;
+      padding: 8px;
+      margin-bottom: 15px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      box-sizing: border-box;
+    }
+    button {
+      background: #4CAF50;
+      color: white;
+      padding: 10px 15px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 16px;
+      width: 100%;
+    }
+    button:hover {
+      background: #45a049;
+    }
+    .error {
+      color: red;
+      font-size: 14px;
+      margin-top: -10px;
+      margin-bottom: 10px;
+    }
+    .success {
+      color: green;
+      text-align: center;
+      margin-bottom: 15px;
+    }
+  </style>
+</head>
+<body>
+  <h2>Add New Member</h2>
+  <div id="message" class="success" style="display: none;"></div>
+  
+  <form id="memberForm">
+    <label for="MEMBER_NAME">Member Name:</label>
+    <input type="text" id="MEMBER_NAME" name="MEMBER_NAME" required>
+    <div id="MEMBER_NAME_error" class="error"></div>
+
+    <label for="MEMBER_EMAIL">Member Email:</label>
+    <input type="email" id="MEMBER_EMAIL" name="MEMBER_EMAIL" required>
+    <div id="MEMBER_EMAIL_error" class="error"></div>
+
+    <label for="MEMBER_TYPE">Member Type:</label>
+    <select id="MEMBER_TYPE" name="MEMBER_TYPE" required>
+      <option value="MEMBER">MEMBER</option>
+      <option value="NON_MEMBER">NON_MEMBER</option>
+    </select>
+    <div id="MEMBER_TYPE_error" class="error"></div>
+
+    <label for="START_DATE">Start Date:</label>
+    <input type="date" id="START_DATE" name="START_DATE" required>
+    <div id="START_DATE_error" class="error"></div>
+
+    <label for="END_DATE">End Date (optional):</label>
+    <input type="date" id="END_DATE" name="END_DATE">
+    <div id="END_DATE_error" class="error"></div>
+
+    <button type="submit">Add Member</button>
+  </form>
+
+  <script>
+    document.getElementById('memberForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      // Clear previous messages and errors
+      document.getElementById('message').style.display = 'none';
+      document.querySelectorAll('.error').forEach(el => el.textContent = '');
+      
+      // Get form data
+      const formData = new FormData(e.target);
+      const data = Object.fromEntries(formData.entries());
+      
+      // Client-side validation
+      let isValid = true;
+      
+      // Validate end date is after start date if provided
+      if (data.END_DATE && new Date(data.END_DATE) < new Date(data.START_DATE)) {
+        document.getElementById('END_DATE_error').textContent = 
+          'End date must be after start date';
+        isValid = false;
+      }
+      
+      if (!isValid) return;
+      
+      try {
+        const response = await fetch('http://localhost:3000/members', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            MEMBER_NAME: data.MEMBER_NAME,
+            MEMBER_EMAIL: data.MEMBER_EMAIL,
+            MEMBER_TYPE: data.MEMBER_TYPE,
+            START_DATE: data.START_DATE,
+            END_DATE: data.END_DATE || null
+          })
+        });
+
+        const result = await response.json();
+        
+        if (!response.ok) {
+          // Handle server-side validation errors
+          if (result.error && result.details) {
+            for (const [field, message] of Object.entries(result.details)) {
+              const errorElement = document.getElementById(`${field}_error`);
+              if (errorElement) {
+                errorElement.textContent = message;
+              }
+            }
+          } else {
+            showMessage(result.error || 'Failed to add member', 'error');
+          }
+          return;
+        }
+        
+        // Success
+        showMessage(result.message || 'Member added successfully!', 'success');
+        document.getElementById('memberForm').reset();
+        
+      } catch (error) {
+        console.error('Error:', error);
+        showMessage('Failed to add member. Please try again.', 'error');
+      }
+    });
+    
+    function showMessage(message, type) {
+      const messageDiv = document.getElementById('message');
+      messageDiv.textContent = message;
+      messageDiv.className = type === 'success' ? 'success' : 'error';
+      messageDiv.style.display = 'block';
+    }
+    
+    // Set minimum end date based on start date
+    document.getElementById('START_DATE').addEventListener('change', function() {
+      const endDateInput = document.getElementById('END_DATE');
+      endDateInput.min = this.value;
+      
+      // If end date is already set and invalid, clear it
+      if (endDateInput.value && endDateInput.value < this.value) {
+        endDateInput.value = '';
+      }
+    });
+  </script>
+</body>
+</html>

@@ -14,11 +14,6 @@ A modular and scalable Library Management System built with **Node.js**, **Expre
 - 🛠️ Clean, Modular Architecture
 
 ---
-
-## 🗂️ Project Structure
-
-
-
 ### 1. Clone the repository
 git clone https://github.com/SrishtiTurki/Library-Management-MySQL.git //
 cd library-management

@@ -20,7 +20,7 @@ A modular and scalable Library Management System built with **Node.js**, **Expre
 
 
 ### 1. Clone the repository
-git clone https://github.com/yourusername/library-management.git
+git clone https://github.com/SrishtiTurki/Library-Management-MySQL.git //
 cd library-management
 
 ### 2. Make sure to download dependencies
